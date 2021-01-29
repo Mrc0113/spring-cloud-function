@@ -22,22 +22,24 @@ public class DemoApplication {
 	@Bean
 	public Function<Person, Employee> hire() {
 		return person -> {
+			System.out.println("Hired Person: " + person);
 			Employee employee = new Employee(person);
 			return employee;
 		};
 	}
 
 	// uncomment while keeping the above POJO function
-//	@Bean
-//	public CloudEventHeaderEnricher cloudEventEnricher() {
-//		return messageBuilder -> messageBuilder.setSource("http://spring.io/cloudevent")
-//				.setType("sample").setId("987654");
-//	}
+	@Bean
+	public CloudEventHeaderEnricher cloudEventEnricher() {
+		return messageBuilder -> messageBuilder.setSource("http://spring.io/cloudevent")
+				.setType("sample").setId("987654");
+	}
 
 	// uncomment while commenting the previous two beans
 //	@Bean
 //	public Function<Message<Person>, Message<Employee>> hire() {
 //		return message -> {
+//			System.out.println("Received CloudEvent: " + message);
 //			Person person = message.getPayload();
 //			Employee employee = new Employee(person);
 //			return CloudEventMessageBuilder.withData(employee).setId("123456")

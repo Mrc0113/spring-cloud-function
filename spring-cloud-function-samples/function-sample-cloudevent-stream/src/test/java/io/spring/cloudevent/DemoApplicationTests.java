@@ -2,22 +2,19 @@ package io.spring.cloudevent;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Collections;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitMessagingTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.function.cloudevent.CloudEventMessageBuilder;
 import org.springframework.cloud.function.cloudevent.CloudEventMessageUtils;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
@@ -28,19 +25,19 @@ import org.springframework.util.MimeTypeUtils;
 public class DemoApplicationTests {
 
 	@Autowired
-	private RabbitMessagingTemplate rabbitTemplate;
-
+	private StreamBridge sb;
+	
 	ArrayBlockingQueue<Message<String>> queue = new ArrayBlockingQueue<>(1);
 
 	@Test
 	public void test() throws Exception {
-		Message<byte[]> messageToAMQP = CloudEventMessageBuilder
+		Message<byte[]> messageToSolace = CloudEventMessageBuilder
 				.withData("{\"firstName\":\"John\", \"lastName\":\"Doe\"}".getBytes())
 				.setSource("https://cloudevent.demo")
 				.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
 				.build(CloudEventMessageUtils.AMQP_ATTR_PREFIX);
 
-		rabbitTemplate.send("hire-in-0", "#", messageToAMQP);
+		sb.send("hire-in-0", messageToSolace);
 
 		Message<String> resultFromKafka = queue.poll(2000, TimeUnit.MILLISECONDS);
 		System.out.println("Result Message: " + resultFromKafka);
@@ -59,8 +56,8 @@ public class DemoApplicationTests {
 	public static class TestRule implements ExecutionCondition {
 		@Override
 		public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-			try {
-				new CachingConnectionFactory("localhost").createConnection();
+//			try {
+//				new CachingConnectionFactory("localhost").createConnection();
 				try {
 					Socket socket = new Socket();
 					socket.connect(new InetSocketAddress("localhost", 9092));
@@ -70,11 +67,11 @@ public class DemoApplicationTests {
 					System.out.println("Kafka is not available on localhost:9092");
 					return ConditionEvaluationResult.disabled("Kafka is not available on localhost, default port");
 				}
-			}
-			catch (Exception e) {
-				System.out.println("RabbitMQ is not available on localhost:5672");
-				return ConditionEvaluationResult.disabled("Rabbit is not available on localhost:5672");
-			}
+//			}
+//			catch (Exception e) {
+//				System.out.println("RabbitMQ is not available on localhost:5672");
+//				return ConditionEvaluationResult.disabled("Rabbit is not available on localhost:5672");
+//			}
 
 
 			return ConditionEvaluationResult.enabled("All is good");
